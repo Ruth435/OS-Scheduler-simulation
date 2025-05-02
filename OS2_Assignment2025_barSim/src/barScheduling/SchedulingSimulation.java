@@ -4,9 +4,15 @@ package barScheduling;
 // the main class, starts all threads and the simulation
 
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 
 
 public class SchedulingSimulation {
@@ -17,7 +23,17 @@ public class SchedulingSimulation {
 	static CountDownLatch startSignal;	
 	static Patron[] patrons; // array for customer threads
 	static Barman Sarah;
+	public static BlockingQueue<Long> finishTimes = new LinkedBlockingQueue<>();
 
+	public static void logToFile(String filename, String message) {
+    try (FileWriter fw = new FileWriter(filename, true);
+         BufferedWriter bw = new BufferedWriter(fw);
+         PrintWriter out = new PrintWriter(bw)) {
+        out.println(message);
+    } catch (IOException e) {
+        System.err.println("Error writing to log file: " + e.getMessage());
+    }
+}
 	
 
 	public static void main(String[] args) throws InterruptedException, IOException {
@@ -31,13 +47,12 @@ public class SchedulingSimulation {
 		
 
 		startSignal= new CountDownLatch(noPatrons+2);//Barman and patrons and main method must be ready
-		
 		//create barman
         Sarah= new Barman(startSignal,sched,q,s); 
      	Sarah.start();
-  
 	    //create all the patrons, who all need access to Barman
 		patrons = new Patron[noPatrons];
+		long startTime = System.nanoTime();
 		for (int i=0;i<noPatrons;i++) {
 			patrons[i] = new Patron(i,startSignal,Sarah,seed);
 			patrons[i].start();
@@ -51,12 +66,15 @@ public class SchedulingSimulation {
 		switch(sched) {
 		  case 0:
 			  System.out.println("-------------- and FCSF scheduling ---------------");
+			  logToFile("patron_stats.txt", " FCSF; " + noPatrons + " Patrons; " + seed + " seed\n");
 		    break;
 		  case 1:
 			  System.out.println("-------------- and SJF scheduling ---------------");
+			  logToFile("patron_stats.txt", " SJF; " + noPatrons + " Patrons; " + seed + " seed\n");
 		    break;
 		  case 2:
 			  System.out.println("-------------- and RR scheduling with q="+q+"-------------");
+			  logToFile("patron_stats.txt", " RR; " + q + " Quantum; "+ noPatrons + " Patrons; " + seed + " seed\n");
 		}
 		
 			
@@ -64,10 +82,42 @@ public class SchedulingSimulation {
       	
       	//wait till all patrons done, otherwise race condition on the file closing!
       	for (int i=0;i<noPatrons;i++)  patrons[i].join();
-
+		long endTime = System.nanoTime();
     	System.out.println("------Waiting for Barman------");
     	Sarah.interrupt();   //tell Barman to close up
     	Sarah.join(); //wait till she has
       	System.out.println("------Bar closed------");
+		int numWindows = (int)Math.ceil((endTime-startTime)/1000000000.0); //window being 1 seconds here
+		int[] throughput = new int[numWindows];
+		long maxTime = 0;
+		long minTime = 30000000;
+		for (int i=0;i<noPatrons;i++) {
+			long patronEnd = finishTimes.take(); // Blocks if the queue is empty
+			maxTime = Math.max(maxTime, patronEnd);
+			int space = (int)Math.ceil((patronEnd - startTime)/1000000000.0); //calculate in which window the parton finished
+			patronEnd = patronEnd/1000000;
+			minTime = Math.min(minTime, patronEnd);
+			throughput[space-1]++;
+		}
+		int avgThroughput = 0;
+		int medThroughput = 0;
+		int varThroughput = 0;
+		Arrays.sort(throughput);
+		numWindows = (int)Math.ceil((maxTime - startTime) / 1000000000.0);
+		for (int i=0;i<numWindows;i++) {
+			avgThroughput += throughput[i];
+		}
+		avgThroughput = avgThroughput/numWindows;
+		for (int i=0;i<numWindows;i++) {
+            varThroughput += (throughput[i] - avgThroughput) * (throughput[i] - avgThroughput);
+		}
+		if (throughput.length % 2 == 0) {
+            // Even length
+            medThroughput = (throughput[throughput.length / 2 - 1] + throughput[throughput.length / 2]) / 2.0;
+        } else {
+            // Odd length
+            medThroughput = throughput[throughput.length / 2];
+        }
+		logToFile("patron_stats.txt","Throughput: \n" + "Mean: " + avgThroughput + "\nMedian: " + medThroughput + "\nVariance: " + varThroughput);
  	}
 }

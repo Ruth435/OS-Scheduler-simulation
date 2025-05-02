@@ -4,6 +4,7 @@ package barScheduling;
 
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import barScheduling.SchedulingSimulation;
 
 /*class for the patrons at the bar*/
 
@@ -15,6 +16,11 @@ public class Patron extends Thread {
 
 	private int ID; //thread ID 
 	private int numberOfDrinks;
+	private long turnaroundTime;
+	private long responseTime;
+	private boolean firstDrink = true;
+	private long endTime;
+	
 
 
 	private DrinkOrder [] drinksOrder;
@@ -41,19 +47,27 @@ public class Patron extends Thread {
 	        sleep(arrivalTime);// Patrons arrive at staggered  times depending on ID 
 			System.out.println("+new thirsty Patron "+ this.ID +" arrived"); //Patron has actually arrived
 			//End do not change
-			
+			long startTime = System.nanoTime();
 	        for(int i=0;i<numberOfDrinks;i++) {
 	        	drinksOrder[i]=new DrinkOrder(this.ID); //order a drink (=CPU burst)	        
 	        	//drinksOrder[i]=new DrinkOrder(this.ID,i); //fixed drink order (=CPU burst), useful for testing
 				System.out.println("Order placed by " + drinksOrder[i].toString()); //output in standard format  - do not change this
+				long startResponseTime = System.nanoTime();
 				theBarman.placeDrinkOrder(drinksOrder[i]);
 				drinksOrder[i].waitForOrder();
+				if(firstDrink)
+				{
+					responseTime = (System.nanoTime() - startResponseTime)/1000000 ;
+					firstDrink = false;
+				}
 				System.out.println("Drinking patron " + drinksOrder[i].toString());
 				sleep(drinksOrder[i].getImbibingTime()); //drinking drink = "IO"
 			}
-
+			endTime = System.nanoTime();
 			System.out.println("Patron "+ this.ID + " completed ");
-			
+			turnaroundTime = (endTime - startTime)/1000000;
+			System.out.println("Patron " + this.ID + " Turnaround Time: " + turnaroundTime + "ms Response Time: " + responseTime + "ms");
+			SchedulingSimulation.finishTimes.put(endTime);
 		} catch (InterruptedException e1) {  //do nothing
 		}
 }

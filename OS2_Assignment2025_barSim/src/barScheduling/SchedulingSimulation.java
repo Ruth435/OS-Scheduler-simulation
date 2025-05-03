@@ -26,15 +26,6 @@ public class SchedulingSimulation {
 	public static BlockingQueue<Long> finishTimes = new LinkedBlockingQueue<>();
 	public static String algName = "";
 
-	public static void logToFile(String filename, String message) {
-    try (FileWriter fw = new FileWriter(filename, true);
-         BufferedWriter bw = new BufferedWriter(fw);
-         PrintWriter out = new PrintWriter(bw)) {
-        out.println(message);
-    } catch (IOException e) {
-        System.err.println("Error writing to log file: " + e.getMessage());
-    }
-}
 
 public static void writeSummaryToCSV(String filename, int[] throughput) {
     // Collect stats
@@ -49,7 +40,7 @@ public static void writeSummaryToCSV(String filename, int[] throughput) {
 
     try (PrintWriter writer = new PrintWriter(new FileWriter(filename, true))) {
         writer.printf(
-            "%s,%d,%d,%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
+            "%s,%d,%d,%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
             algName,
             q,
             s,
@@ -73,8 +64,6 @@ public static void writeSummaryToCSV(String filename, int[] throughput) {
         System.err.println("Error writing summary to CSV: " + e.getMessage());
     }
 }
-
-	
 
 	public static void main(String[] args) throws InterruptedException, IOException {
 

@@ -140,16 +140,6 @@ public class Barman extends Thread {
 			System.out.println("---Barman is packing up ");
 			System.out.println("---number interrupts="+interrupts);
 			idleTime += (System.currentTimeMillis()- temp);
-			System.out.println("Idle time: " + idleTime + "ms \tBusy time: " + busyTime + "ms");
-			long check = 8;
-			patronNum = 0;
-			while (check != 0)
-			{
-				check = patronWaits[patronNum];
-				System.out.println("Patron " + patronNum + " Waited " + check + "ms" );
-				patronNum++;
-				check = patronWaits[patronNum];
-			}
 		}
 	}
 }

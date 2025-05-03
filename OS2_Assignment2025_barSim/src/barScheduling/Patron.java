@@ -76,8 +76,6 @@ public class Patron extends Thread {
 			endTime = System.nanoTime();
 			System.out.println("Patron "+ this.ID + " completed ");
 			turnaroundTime = (endTime - startTime)/1000000;
-			SchedulingSimulation.logToFile("patron_stats.txt","Patron " + this.ID + " Turnaround Time: " + turnaroundTime + "ms Response Time: " + responseTime + "ms");
-			System.out.println("Patron " + this.ID + " Turnaround Time: " + turnaroundTime + "ms Response Time: " + responseTime + "ms");
 			SchedulingSimulation.finishTimes.put(endTime);
 		} catch (InterruptedException e1) {  //do nothing
 		}

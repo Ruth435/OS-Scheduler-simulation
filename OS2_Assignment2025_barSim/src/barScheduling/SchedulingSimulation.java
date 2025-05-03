@@ -24,6 +24,7 @@ public class SchedulingSimulation {
 	static Patron[] patrons; // array for customer threads
 	static Barman Sarah;
 	public static BlockingQueue<Long> finishTimes = new LinkedBlockingQueue<>();
+	public static string algName = "";
 
 	public static void logToFile(String filename, String message) {
     try (FileWriter fw = new FileWriter(filename, true);
@@ -34,6 +35,37 @@ public class SchedulingSimulation {
         System.err.println("Error writing to log file: " + e.getMessage());
     }
 }
+
+public static void writePatronMetricsToCSV(String filename) {
+    long[] waitTimes = Sarah.getWaitTimes();  // Get array with 500 slots
+
+    try (PrintWriter writer = new PrintWriter(new FileWriter(filename, true))) {
+        // Write header only if file is new — optional logic
+        writer.println("patron_id,turnaround_time,response_time,wait_time,algorithm,quantum,context_switch_time,num_patrons,seed");
+
+        for (int i = 0; i < noPatrons; i++) {
+            long turnaround = patrons[i].getTurnaroundTime();
+            long response = patrons[i].getResponseTime();
+            long wait = waitTimes[i];
+
+            writer.printf(
+                "%d,%d,%d,%d,%s,%d,%d,%d,%d%n",
+                i,
+                turnaround,
+                response,
+                wait,
+                algName,
+                q,
+                s,
+                noPatrons,
+                seed
+            );
+        }
+    } catch (IOException e) {
+        System.err.println("Error writing patron stats to CSV: " + e.getMessage());
+    }
+}
+
 	
 
 	public static void main(String[] args) throws InterruptedException, IOException {
@@ -66,15 +98,15 @@ public class SchedulingSimulation {
 		switch(sched) {
 		  case 0:
 			  System.out.println("-------------- and FCSF scheduling ---------------");
-			  logToFile("patron_stats.txt", " FCSF; " + noPatrons + " Patrons; " + seed + " seed\n");
+			  algName = "FCFS";
 		    break;
 		  case 1:
 			  System.out.println("-------------- and SJF scheduling ---------------");
-			  logToFile("patron_stats.txt", " SJF; " + noPatrons + " Patrons; " + seed + " seed\n");
+			  algName = "SJF";
 		    break;
 		  case 2:
 			  System.out.println("-------------- and RR scheduling with q="+q+"-------------");
-			  logToFile("patron_stats.txt", " RR; " + q + " Quantum; "+ noPatrons + " Patrons; " + seed + " seed\n");
+			  algName = "RR";
 		}
 		
 			
@@ -111,13 +143,14 @@ public class SchedulingSimulation {
 		for (int i=0;i<numWindows;i++) {
             varThroughput += (throughput[i] - avgThroughput) * (throughput[i] - avgThroughput);
 		}
+		varThroughput = varThroughput/(numWindows-1);
 		if (throughput.length % 2 == 0) {
             // Even length
-            medThroughput = (throughput[throughput.length / 2 - 1] + throughput[throughput.length / 2]) / 2.0;
+            medThroughput = (int)((throughput[throughput.length / 2 - 1] + throughput[throughput.length / 2]) / 2.0);
         } else {
             // Odd length
-            medThroughput = throughput[throughput.length / 2];
+            medThroughput = (int)(throughput[throughput.length / 2]);
         }
-		logToFile("patron_stats.txt","Throughput: \n" + "Mean: " + avgThroughput + "\nMedian: " + medThroughput + "\nVariance: " + varThroughput);
+		writePatronMetricsToCSV("patron_stats.csv");
  	}
 }

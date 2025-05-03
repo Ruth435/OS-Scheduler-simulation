@@ -2,6 +2,10 @@
 package barScheduling;
 
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import barScheduling.SchedulingSimulation;
@@ -20,11 +24,9 @@ public class Patron extends Thread {
 	private long responseTime;
 	private boolean firstDrink = true;
 	private long endTime;
-	
-
 
 	private DrinkOrder [] drinksOrder;
-	
+
 	Patron( int ID,  CountDownLatch startSignal, Barman aBarman, long seed) {
 		this.ID=ID;
 		this.startSignal=startSignal;
@@ -33,6 +35,14 @@ public class Patron extends Thread {
 		drinksOrder=new DrinkOrder[numberOfDrinks];
 		if (seed>0) random = new Random(seed);// for consistent Patron behaviour
 		else random = new Random();
+	}
+
+	public long getTurnaroundTime() {
+		return turnaroundTime;
+	}
+	
+	public long getResponseTime() {
+		return responseTime;
 	}
 	
 	
@@ -66,6 +76,7 @@ public class Patron extends Thread {
 			endTime = System.nanoTime();
 			System.out.println("Patron "+ this.ID + " completed ");
 			turnaroundTime = (endTime - startTime)/1000000;
+			SchedulingSimulation.logToFile("patron_stats.txt","Patron " + this.ID + " Turnaround Time: " + turnaroundTime + "ms Response Time: " + responseTime + "ms");
 			System.out.println("Patron " + this.ID + " Turnaround Time: " + turnaroundTime + "ms Response Time: " + responseTime + "ms");
 			SchedulingSimulation.finishTimes.put(endTime);
 		} catch (InterruptedException e1) {  //do nothing

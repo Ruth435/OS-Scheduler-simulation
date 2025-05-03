@@ -24,7 +24,7 @@ public class SchedulingSimulation {
 	static Patron[] patrons; // array for customer threads
 	static Barman Sarah;
 	public static BlockingQueue<Long> finishTimes = new LinkedBlockingQueue<>();
-	public static string algName = "";
+	public static String algName = "";
 
 	public static void logToFile(String filename, String message) {
     try (FileWriter fw = new FileWriter(filename, true);
@@ -36,33 +36,41 @@ public class SchedulingSimulation {
     }
 }
 
-public static void writePatronMetricsToCSV(String filename) {
-    long[] waitTimes = Sarah.getWaitTimes();  // Get array with 500 slots
+public static void writeSummaryToCSV(String filename, int[] throughput) {
+    // Collect stats
+    long[] turnarounds = new long[noPatrons];
+    long[] responses = new long[noPatrons];
+    long[] waits = Arrays.copyOf(Sarah.getWaitTimes(), noPatrons);  // Trim to real size
+
+    for (int i = 0; i < noPatrons; i++) {
+        turnarounds[i] = patrons[i].getTurnaroundTime();
+        responses[i] = patrons[i].getResponseTime();
+    }
 
     try (PrintWriter writer = new PrintWriter(new FileWriter(filename, true))) {
-        // Write header only if file is new — optional logic
-        writer.println("patron_id,turnaround_time,response_time,wait_time,algorithm,quantum,context_switch_time,num_patrons,seed");
-
-        for (int i = 0; i < noPatrons; i++) {
-            long turnaround = patrons[i].getTurnaroundTime();
-            long response = patrons[i].getResponseTime();
-            long wait = waitTimes[i];
-
-            writer.printf(
-                "%d,%d,%d,%d,%s,%d,%d,%d,%d%n",
-                i,
-                turnaround,
-                response,
-                wait,
-                algName,
-                q,
-                s,
-                noPatrons,
-                seed
-            );
-        }
+        writer.printf(
+            "%s,%d,%d,%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
+            algName,
+            q,
+            s,
+            noPatrons,
+            seed,
+            Sarah.getCPUUtilization(),
+            StatsUtil.mean(turnarounds),
+            StatsUtil.median(turnarounds),
+            StatsUtil.stdDev(turnarounds),
+            StatsUtil.mean(responses),
+            StatsUtil.median(responses),
+            StatsUtil.stdDev(responses),
+            StatsUtil.mean(waits),
+            StatsUtil.median(waits),
+            StatsUtil.stdDev(waits),
+            StatsUtil.mean(throughput),
+            StatsUtil.median(throughput),
+            StatsUtil.stdDev(throughput)
+        );
     } catch (IOException e) {
-        System.err.println("Error writing patron stats to CSV: " + e.getMessage());
+        System.err.println("Error writing summary to CSV: " + e.getMessage());
     }
 }
 
@@ -130,27 +138,7 @@ public static void writePatronMetricsToCSV(String filename) {
 			patronEnd = patronEnd/1000000;
 			minTime = Math.min(minTime, patronEnd);
 			throughput[space-1]++;
-		}
-		int avgThroughput = 0;
-		int medThroughput = 0;
-		int varThroughput = 0;
-		Arrays.sort(throughput);
-		numWindows = (int)Math.ceil((maxTime - startTime) / 1000000000.0);
-		for (int i=0;i<numWindows;i++) {
-			avgThroughput += throughput[i];
-		}
-		avgThroughput = avgThroughput/numWindows;
-		for (int i=0;i<numWindows;i++) {
-            varThroughput += (throughput[i] - avgThroughput) * (throughput[i] - avgThroughput);
-		}
-		varThroughput = varThroughput/(numWindows-1);
-		if (throughput.length % 2 == 0) {
-            // Even length
-            medThroughput = (int)((throughput[throughput.length / 2 - 1] + throughput[throughput.length / 2]) / 2.0);
-        } else {
-            // Odd length
-            medThroughput = (int)(throughput[throughput.length / 2]);
-        }
-		writePatronMetricsToCSV("patron_stats.csv");
+		}	
+		writeSummaryToCSV("simulation_summary.csv", throughput);	
  	}
 }

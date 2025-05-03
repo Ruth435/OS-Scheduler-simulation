@@ -29,12 +29,15 @@ public class Barman extends Thread {
 	int patronNum = 400;
 	private long[] patronWaits = new long[500]; //assuming the bar capacity is no more than this
 	
-	public Long[] getWaitTimes() {
+	public long[] getWaitTimes() {
     return patronWaits;
 	}
 
 	public double getCPUUtilization() { //returns CPU utilization as a percentage
-		return (busyTime/idleTime)*100.0;
+		double temp = (double)(idleTime + busyTime);
+		temp = busyTime/temp;
+		temp *= 100;
+		return temp;
 	}
 
 

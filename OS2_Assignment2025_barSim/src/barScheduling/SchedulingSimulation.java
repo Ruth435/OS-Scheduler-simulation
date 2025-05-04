@@ -77,6 +77,7 @@ public static void writeSummaryToCSV(String filename, int[] throughput) {
 
 		startSignal= new CountDownLatch(noPatrons+2);//Barman and patrons and main method must be ready
 		//create barman
+		System.out.println("BARMAN TO START: " +sched + " " + q + " " + s + " SEED: " + seed);
         Sarah= new Barman(startSignal,sched,q,s); 
      	Sarah.start();
 	    //create all the patrons, who all need access to Barman

@@ -63,3 +63,7 @@ best_quantumCPU <- summary_by_quantum %>%
   select(quantum, avg_util)
 
 print(paste("Ideal quantum value (Highest avg CUP util):", best_quantumCPU$quantum))
+
+plot(rr_data$SD_turnaround ~ rr_data$quantum)
+plot(rr_data$SD_wait ~ rr_data$quantum)
+plot(rr_data$SD_response ~ rr_data$quantum)
